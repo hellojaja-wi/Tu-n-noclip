@@ -1,0 +1,177 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local noclipGui = Instance.new("ScreenGui")
+local noclipFrame = Instance.new("Frame")
+local titleLabel = Instance.new("TextLabel")
+local toggleBtn = Instance.new("TextButton")
+local closeBtn = Instance.new("TextButton")
+local minBtn = Instance.new("TextButton")
+local maxBtn = Instance.new("TextButton")
+
+noclipGui.Name = "TuanNoclipGuiV4"
+noclipGui.Parent = playerGui
+noclipGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+noclipGui.ResetOnSpawn = false
+
+-- Đặt lệch sang phải một chút để không đè lên bảng Fly
+noclipFrame.Name = "NoclipFrame"
+noclipFrame.Parent = noclipGui
+noclipFrame.Position = UDim2.new(0.100320168, 205, 0.379746825, 0)
+noclipFrame.Size = UDim2.new(0, 175, 0, 57)
+noclipFrame.Active = true
+noclipFrame.Draggable = true
+
+titleLabel.Name = "Title"
+titleLabel.Parent = noclipFrame
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.Size = UDim2.new(1, 0, 0, 26)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Text = "TUÂN NOCLIP V4"
+titleLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+titleLabel.TextScaled = true
+titleLabel.TextWrapped = true
+
+toggleBtn.Name = "ToggleNoclip"
+toggleBtn.Parent = noclipFrame
+toggleBtn.Position = UDim2.new(0.05, 0, 0.48, 0)
+toggleBtn.Size = UDim2.new(0.9, 0, 0, 26)
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.Text = "Noclip: OFF"
+toggleBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+toggleBtn.TextScaled = true
+toggleBtn.TextWrapped = true
+
+closeBtn.Name = "Close"
+closeBtn.Parent = noclipFrame
+closeBtn.Size = UDim2.new(0, 35, 0, 24)
+closeBtn.Position = UDim2.new(0, 0, -1, 31)
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+closeBtn.TextSize = 20
+
+minBtn.Name = "Minimize"
+minBtn.Parent = noclipFrame
+minBtn.Size = UDim2.new(0, 35, 0, 24)
+minBtn.Position = UDim2.new(0, 36, -1, 31)
+minBtn.Font = Enum.Font.SourceSansBold
+minBtn.Text = "-"
+minBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+minBtn.TextSize = 24
+
+maxBtn.Name = "Maximize"
+maxBtn.Parent = noclipFrame
+maxBtn.Size = UDim2.new(0, 35, 0, 24)
+maxBtn.Position = UDim2.new(0, 36, -1, 57)
+maxBtn.Font = Enum.Font.SourceSansBold
+maxBtn.Text = "+"
+maxBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+maxBtn.TextSize = 22
+maxBtn.Visible = false
+
+-- Hiệu ứng cầu vồng mượt mà
+task.spawn(function()
+	local hue = 0
+	local elements = {noclipFrame, titleLabel, toggleBtn, closeBtn, minBtn, maxBtn}
+	while noclipGui and noclipGui.Parent do
+		hue = (hue + 0.004) % 1
+		for idx, obj in ipairs(elements) do
+			if obj and obj.Parent then
+				local offsetHue = (hue + (idx * 0.09)) % 1
+				obj.BackgroundColor3 = Color3.fromHSV(offsetHue, 0.85, 1)
+			end
+		end
+		RunService.RenderStepped:Wait()
+	end
+end)
+
+StarterGui:SetCore("SendNotification", {
+	Title = "TUÂN NOCLIP V4";
+	Text = "BY THIỆT";
+	Duration = 4
+})
+
+-- Logic Noclip xuyên tường
+local noclipEnabled = false
+local savedCollisions = {}
+
+local function setCharacterCollision(char, canCollide)
+	if not char then return end
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") then
+			if not canCollide then
+				if savedCollisions[part] == nil then
+					savedCollisions[part] = part.CanCollide
+				end
+				part.CanCollide = false
+			else
+				if savedCollisions[part] ~= nil then
+					part.CanCollide = savedCollisions[part]
+				elseif part.Name ~= "HumanoidRootPart" then
+					part.CanCollide = true
+				end
+			end
+		end
+	end
+end
+
+RunService.Stepped:Connect(function()
+	if noclipEnabled and player.Character then
+		setCharacterCollision(player.Character, false)
+	end
+end)
+
+player.CharacterAdded:Connect(function(char)
+	table.clear(savedCollisions)
+	if noclipEnabled then
+		task.wait(0.2)
+		setCharacterCollision(char, false)
+	end
+end)
+
+toggleBtn.MouseButton1Click:Connect(function()
+	noclipEnabled = not noclipEnabled
+	if noclipEnabled then
+		toggleBtn.Text = "Noclip: ON"
+		if player.Character then
+			setCharacterCollision(player.Character, false)
+		end
+	else
+		toggleBtn.Text = "Noclip: OFF"
+		if player.Character then
+			setCharacterCollision(player.Character, true)
+		end
+		table.clear(savedCollisions)
+	end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+	noclipEnabled = false
+	if player.Character then
+		setCharacterCollision(player.Character, true)
+	end
+	noclipGui:Destroy()
+end)
+
+minBtn.MouseButton1Click:Connect(function()
+	titleLabel.Visible = false
+	toggleBtn.Visible = false
+	minBtn.Visible = false
+	maxBtn.Visible = true
+	noclipFrame.BackgroundTransparency = 1
+	closeBtn.Position = UDim2.new(0, 0, -1, 57)
+end)
+
+maxBtn.MouseButton1Click:Connect(function()
+	titleLabel.Visible = true
+	toggleBtn.Visible = true
+	minBtn.Visible = true
+	maxBtn.Visible = false
+	noclipFrame.BackgroundTransparency = 0
+	closeBtn.Position = UDim2.new(0, 0, -1, 31)
+end)
